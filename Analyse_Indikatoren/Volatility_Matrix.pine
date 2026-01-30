@@ -1,0 +1,157 @@
+// @version=5
+indicator("Volatility & Trend Matrix", shorttitle="VTM", overlay=true)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [1] INPUTS
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+g_bb = "Bollinger Bands"
+i_bb_enabled = input.bool(true, "Enable Bollinger Bands", group=g_bb, inline="bb1")
+i_bb_len = input.int(20, "Length", group=g_bb, inline="bb1")
+i_bb_src = input.source(close, "Source", group=g_bb)
+i_bb_mult = input.float(2.0, "StdDev", group=g_bb, inline="bb1")
+i_bb_fill = input.bool(true, "Fill Bands", group=g_bb, inline="bb2")
+
+g_kc = "Keltner Channels"
+i_kc_enabled = input.bool(true, "Enable Keltner Channels", group=g_kc, inline="kc1")
+i_kc_len = input.int(20, "Length", group=g_kc, inline="kc1")
+i_kc_maType = input.string("EMA", "MA Type", options=["SMA", "EMA", "WMA"], group=g_kc)
+i_kc_atrMult = input.float(1.5, "ATR Multiplier", group=g_kc, inline="kc2")
+i_kc_useTrueRange = input.bool(true, "Use True Range", group=g_kc, inline="kc2")
+
+g_squeeze = "Volatility Squeeze"
+i_squeeze_enabled = input.bool(true, "Enable Squeeze Indicator", group=g_squeeze)
+i_squeeze_dots_location = input.string("Bottom", "Dots Location", options=["Bottom", "On Zero Line"], group=g_squeeze)
+
+g_ma = "Moving Average Ribbon"
+i_ma_enabled = input.bool(true, "Enable MA Ribbon", group=g_ma)
+i_ma_type = input.string("EMA", "MA Type", options=["SMA", "EMA", "WMA", "HMA"], group=g_ma)
+i_ma_len1 = input.int(10, "MA 1", inline="ma1", group=g_ma)
+i_ma_len2 = input.int(20, "MA 2", inline="ma1", group=g_ma)
+i_ma_len3 = input.int(30, "MA 3", inline="ma2", group=g_ma)
+i_ma_len4 = input.int(40, "MA 4", inline="ma2", group=g_ma)
+i_ma_len5 = input.int(50, "MA 5", inline="ma3", group=g_ma)
+i_ma_len6 = input.int(60, "MA 6", inline="ma3", group=g_ma)
+i_ma_fill = input.bool(true, "Fill Ribbon", group=g_ma)
+
+g_adx = "ADX & DMI"
+i_adx_enabled = input.bool(true, "Enable ADX/DMI", group=g_adx, inline="adx1")
+i_adx_len = input.int(14, "ADX Smoothing", group=g_adx, inline="adx1")
+i_dmi_len = input.int(14, "DI Length", group=g_adx, inline="adx1")
+i_adx_threshold = input.int(25, "Trend Threshold", group=g_adx)
+i_adx_bg_color = input.bool(true, "Color Background by Trend", group=g_adx)
+
+g_psar = "Parabolic SAR"
+i_psar_enabled = input.bool(true, "Enable Parabolic SAR", group=g_psar, inline="psar1")
+i_psar_start = input.float(0.02, "Start", group=g_psar, inline="psar1")
+i_psar_inc = input.float(0.02, "Increment", group=g_psar, inline="psar2")
+i_psar_max = input.float(0.2, "Maximum", group=g_psar, inline="psar2")
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [2] CALCULATIONS
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+f_ma(source, length, type) =>
+    switch type
+        "SMA" => ta.sma(source, length)
+        "EMA" => ta.ema(source, length)
+        "WMA" => ta.wma(source, length)
+        "HMA" => ta.hma(source, length)
+        => na
+
+bb_basis = f_ma(i_bb_src, i_bb_len, "SMA")
+bb_dev = i_bb_mult * ta.stdev(i_bb_src, i_bb_len)
+bb_upper = bb_basis + bb_dev
+bb_lower = bb_basis - bb_dev
+
+kc_ma = f_ma(hlc3, i_kc_len, i_kc_maType)
+kc_range = i_kc_useTrueRange ? ta.tr : (high - low)
+kc_atr = ta.rma(kc_range, i_kc_len)
+kc_upper = kc_ma + kc_atr * i_kc_atrMult
+kc_lower = kc_ma - kc_atr * i_kc_atrMult
+
+in_squeeze = i_bb_enabled and i_kc_enabled and (bb_lower > kc_lower) and (bb_upper < kc_upper)
+squeeze_off = i_bb_enabled and i_kc_enabled and (bb_lower < kc_lower) and (bb_upper > kc_upper)
+
+ma1 = i_ma_enabled ? f_ma(close, i_ma_len1, i_ma_type) : na
+ma2 = i_ma_enabled ? f_ma(close, i_ma_len2, i_ma_type) : na
+ma3 = i_ma_enabled ? f_ma(close, i_ma_len3, i_ma_type) : na
+ma4 = i_ma_enabled ? f_ma(close, i_ma_len4, i_ma_type) : na
+ma5 = i_ma_enabled ? f_ma(close, i_ma_len5, i_ma_type) : na
+ma6 = i_ma_enabled ? f_ma(close, i_ma_len6, i_ma_type) : na
+
+[dmi_plus, dmi_minus, adx] = if i_adx_enabled
+    [p, m, a] = ta.dmi(i_dmi_len, i_adx_len)
+    [p, m, a]
+else
+    [na, na, na]
+
+is_trending = i_adx_enabled and adx > i_adx_threshold
+is_bull_trend = is_trending and dmi_plus > dmi_minus
+is_bear_trend = is_trending and dmi_minus > dmi_plus
+
+psar = i_psar_enabled ? ta.sar(i_psar_start, i_psar_inc, i_psar_max) : na
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [3] PLOTTING
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+bb_upper_plot = plot(i_bb_enabled ? bb_upper : na, "BB Upper", color=color.new(color.blue, 50))
+bb_lower_plot = plot(i_bb_enabled ? bb_lower : na, "BB Lower", color=color.new(color.blue, 50))
+plot(i_bb_enabled ? bb_basis : na, "BB Basis", color=color.new(color.white, 70))
+fill(bb_upper_plot, bb_lower_plot, color=i_bb_fill ? color.new(color.blue, 90) : na)
+
+kc_upper_plot = plot(i_kc_enabled ? kc_upper : na, "KC Upper", color=color.new(color.red, 50))
+kc_lower_plot = plot(i_kc_enabled ? kc_lower : na, "KC Lower", color=color.new(color.red, 50))
+plot(i_kc_enabled ? kc_ma : na, "KC Basis", color=color.new(color.orange, 70))
+
+p_ma1 = plot(ma1, "MA1", color=color.new(color.aqua, 60), linewidth=1)
+p_ma2 = plot(ma2, "MA2", color=color.new(color.aqua, 50), linewidth=1)
+p_ma3 = plot(ma3, "MA3", color=color.new(color.aqua, 40), linewidth=1)
+p_ma4 = plot(ma4, "MA4", color=color.new(color.yellow, 40), linewidth=2)
+p_ma5 = plot(ma5, "MA5", color=color.new(color.yellow, 50), linewidth=2)
+p_ma6 = plot(ma6, "MA6", color=color.new(color.yellow, 60), linewidth=2)
+fill(p_ma1, p_ma4, color=i_ma_fill and ma1 > ma4 ? color.new(color.green, 85) : i_ma_fill ? color.new(color.red, 85) : na)
+
+plot(psar, "Parabolic SAR", style=plot.style_cross, color=color.new(color.purple, 20), linewidth=2)
+
+squeeze_dot_y = i_squeeze_dots_location == "Bottom" ? low - ta.tr * 1.5 : bb_basis
+plot(i_squeeze_enabled and in_squeeze ? squeeze_dot_y : na, "Squeeze On", color=color.red, style=plot.style_circles, linewidth=3)
+plot(i_squeeze_enabled and not in_squeeze ? squeeze_dot_y : na, "Squeeze Off", color=color.green, style=plot.style_circles, linewidth=3)
+
+bg_color = if i_adx_bg_color and is_bull_trend
+    color.new(color.green, 85)
+else if i_adx_bg_color and is_bear_trend
+    color.new(color.red, 85)
+else
+    na
+bgcolor(bg_color)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [4] DASHBOARD (in subwindow)
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+plot(i_adx_enabled ? adx : na, "ADX", color=color.new(color.white, 20), linewidth=2, display=display.pane)
+plot(i_adx_enabled ? dmi_plus : na, "+DI", color=color.new(color.green, 20), display=display.pane)
+plot(i_adx_enabled ? dmi_minus : na, "-DI", color=color.new(color.red, 20), display=display.pane)
+hline(i_adx_threshold, "ADX Threshold", color.gray, linestyle=hline.style_dashed, display=display.pane)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [5] ALERTS
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+alertcondition(ta.cross(close, bb_upper), "Price Cross BB Upper", "Price crossed above Bollinger Band Upper on {{ticker}}.")
+alertcondition(ta.cross(close, bb_lower), "Price Cross BB Lower", "Price crossed below Bollinger Band Lower on {{ticker}}.")
+
+alertcondition(ta.cross(close, kc_upper), "Price Cross KC Upper", "Price crossed above Keltner Channel Upper on {{ticker}}.")
+alertcondition(ta.cross(close, kc_lower), "Price Cross KC Lower", "Price crossed below Keltner Channel Lower on {{ticker}}.")
+
+alertcondition(i_squeeze_enabled and in_squeeze and not in_squeeze[1], "Squeeze Started", "Volatility Squeeze has started on {{ticker}}.")
+alertcondition(i_squeeze_enabled and not in_squeeze and in_squeeze[1], "Squeeze Fired", "Volatility Squeeze has fired on {{ticker}}.")
+
+alertcondition(i_ma_enabled and ta.crossover(ma1, ma6), "MA Ribbon Bullish Cross", "Fast MA ribbon crossed above Slow MA ribbon on {{ticker}}.")
+alertcondition(i_ma_enabled and ta.crossunder(ma1, ma6), "MA Ribbon Bearish Cross", "Fast MA ribbon crossed below Slow MA ribbon on {{ticker}}.")
+
+alertcondition(i_adx_enabled and ta.crossover(adx, i_adx_threshold), "ADX Trend Start", "ADX crossed above threshold. Trend may be starting on {{ticker}}.")
+alertcondition(i_adx_enabled and ta.crossover(dmi_plus, dmi_minus), "DMI Bullish Cross", "+DI crossed above -DI on {{ticker}}.")
+alertcondition(i_adx_enabled and ta.crossunder(dmi_plus, dmi_minus), "DMI Bearish Cross", "+DI crossed below -DI on {{ticker}}.")
+
+alertcondition(i_psar_enabled and ta.cross(close, psar), "PSAR Flip", "Parabolic SAR has flipped on {{ticker}}.")

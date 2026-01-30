@@ -1,0 +1,294 @@
+// @version=5
+indicator("Ultimate Oscillator & Divergence Suite", shorttitle="UOS", format=format.price, precision=2, timeframe="")
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [1] SCRIPT INPUTS & CONFIGURATION
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+g_general = "General Settings"
+oscillator_to_plot = input.string("RSI", "Oscillator to Display in Pane", options=["RSI", "Stochastic", "CCI", "MFI", "MACD"], group=g_general)
+i_enableDashboard = input.bool(true, "Enable On-Screen Dashboard", group=g_general, inline="dash")
+i_dashboardPosition = input.string("top_right", "Position", options=["top_right", "top_left", "middle_right", "middle_left", "bottom_right", "bottom_left"], group=g_general, inline="dash")
+i_multitimeframe = input.timeframe("", "Higher Timeframe (Optional)", group=g_general)
+
+g_rsi = "RSI (Relative Strength Index)"
+i_rsi_enabled = input.bool(true, "Enable RSI", group=g_rsi, inline="rsi1")
+i_rsi_len = input.int(14, "RSI Length", minval=1, group=g_rsi, inline="rsi1")
+i_rsi_src = input.source(close, "Source", group=g_rsi)
+i_rsi_ob = input.int(70, "Overbought Level", group=g_rsi, inline="rsi2")
+i_rsi_os = input.int(30, "Oversold Level", group=g_rsi, inline="rsi2")
+i_rsi_showMa = input.bool(true, "Show RSI MA", group=g_rsi, inline="rsi3")
+i_rsi_maType = input.string("EMA", "MA Type", options=["SMA", "EMA", "WMA", "HMA"], group=g_rsi, inline="rsi3")
+i_rsi_maLen = input.int(9, "MA Length", group=g_rsi, inline="rsi3")
+
+g_stoch = "Stochastic Oscillator"
+i_stoch_enabled = input.bool(true, "Enable Stochastic", group=g_stoch, inline="stoch1")
+i_stoch_len = input.int(14, "Stochastic Length", minval=1, group=g_stoch, inline="stoch1")
+i_stoch_k = input.int(3, "%K Smoothing", minval=1, group=g_stoch, inline="stoch2")
+i_stoch_d = input.int(3, "%D Smoothing", minval=1, group=g_stoch, inline="stoch2")
+i_stoch_ob = input.int(80, "Overbought Level", group=g_stoch, inline="stoch3")
+i_stoch_os = input.int(20, "Oversold Level", group=g_stoch, inline="stoch3")
+
+g_cci = "CCI (Commodity Channel Index)"
+i_cci_enabled = input.bool(true, "Enable CCI", group=g_cci, inline="cci1")
+i_cci_len = input.int(20, "CCI Length", minval=1, group=g_cci, inline="cci1")
+i_cci_src = input.source(hlc3, "Source", group=g_cci)
+i_cci_ob = input.int(100, "Overbought Level", group=g_cci, inline="cci2")
+i_cci_os = input.int(-100, "Oversold Level", group=g_cci, inline="cci2")
+i_cci_showMa = input.bool(false, "Show CCI MA", group=g_cci, inline="cci3")
+i_cci_maType = input.string("EMA", "MA Type", options=["SMA", "EMA", "WMA"], group=g_cci, inline="cci3")
+i_cci_maLen = input.int(9, "MA Length", group=g_cci, inline="cci3")
+
+g_mfi = "MFI (Money Flow Index)"
+i_mfi_enabled = input.bool(true, "Enable MFI", group=g_mfi, inline="mfi1")
+i_mfi_len = input.int(14, "MFI Length", minval=1, group=g_mfi, inline="mfi1")
+i_mfi_ob = input.int(80, "Overbought Level", group=g_mfi, inline="mfi2")
+i_mfi_os = input.int(20, "Oversold Level", group=g_mfi, inline="mfi2")
+
+g_macd = "MACD (Moving Average Convergence Divergence)"
+i_macd_enabled = input.bool(true, "Enable MACD", group=g_macd, inline="macd1")
+i_macd_fast = input.int(12, "Fast Length", minval=1, group=g_macd, inline="macd1")
+i_macd_slow = input.int(26, "Slow Length", minval=1, group=g_macd, inline="macd1")
+i_macd_signal = input.int(9, "Signal Length", minval=1, group=g_macd, inline="macd2")
+i_macd_src = input.source(close, "Source", group=g_macd)
+i_macd_maType = input.string("EMA", "MA Type", options=["SMA", "EMA"], group=g_macd, inline="macd2")
+
+g_div = "Divergence Detection"
+i_div_enabled = input.bool(true, "Enable Divergence Detection", group=g_div)
+i_div_osc_source = input.string("RSI", "Oscillator for Divergence", options=["RSI", "Stochastic", "CCI", "MFI", "MACD Hist"], group=g_div)
+i_div_pivotLookback = input.int(5, "Pivot Lookback", minval=2, group=g_div, inline="div1")
+i_show_regular_bull = input.bool(true, "Regular Bullish", group=g_div, inline="div2")
+i_show_regular_bear = input.bool(true, "Regular Bearish", group=g_div, inline="div2")
+i_show_hidden_bull = input.bool(true, "Hidden Bullish", group=g_div, inline="div3")
+i_show_hidden_bear = input.bool(true, "Hidden Bearish", group=g_div, inline="div3")
+i_div_line_width = input.int(1, "Line Width", minval=1, maxval=5, group=g_div)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [2] CORE CALCULATIONS & FUNCTIONS
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+f_ma(source, length, type) =>
+    switch type
+        "SMA" => ta.sma(source, length)
+        "EMA" => ta.ema(source, length)
+        "WMA" => ta.wma(source, length)
+        "HMA" => ta.hma(source, length)
+        => na
+
+rsi_val = i_rsi_enabled ? ta.rsi(i_rsi_src, i_rsi_len) : na
+rsi_ma = i_rsi_enabled and i_rsi_showMa ? f_ma(rsi_val, i_rsi_maLen, i_rsi_maType) : na
+
+stoch_k_val = i_stoch_enabled ? ta.sma(ta.stoch(close, high, low, i_stoch_len), i_stoch_k) : na
+stoch_d_val = i_stoch_enabled ? ta.sma(stoch_k_val, i_stoch_d) : na
+
+cci_val = i_cci_enabled ? ta.cci(i_cci_src, i_cci_len) : na
+cci_ma = i_cci_enabled and i_cci_showMa ? f_ma(cci_val, i_cci_maLen, i_cci_maType) : na
+
+mfi_val = i_mfi_enabled ? ta.mfi(hlc3, i_mfi_len) : na
+
+[macd_line, signal_line, hist_line] = if i_macd_enabled
+    fast_ma = f_ma(i_macd_src, i_macd_fast, i_macd_maType)
+    slow_ma = f_ma(i_macd_src, i_macd_slow, i_macd_maType)
+    macd = fast_ma - slow_ma
+    signal = f_ma(macd, i_macd_signal, i_macd_maType)
+    hist = macd - signal
+    [macd, signal, hist]
+else
+    [na, na, na]
+
+f_getHTF_val(series, tf) =>
+    request.security(syminfo.tickerid, tf, series, barmerge.gaps_off, barmerge.lookahead_on)
+
+rsi_htf = i_rsi_enabled and i_multitimeframe != "" ? f_getHTF_val(rsi_val, i_multitimeframe) : na
+stoch_k_htf = i_stoch_enabled and i_multitimeframe != "" ? f_getHTF_val(stoch_k_val, i_multitimeframe) : na
+cci_htf = i_cci_enabled and i_multitimeframe != "" ? f_getHTF_val(cci_val, i_multitimeframe) : na
+mfi_htf = i_mfi_enabled and i_multitimeframe != "" ? f_getHTF_val(mfi_val, i_multitimeframe) : na
+macd_hist_htf = i_macd_enabled and i_multitimeframe != "" ? f_getHTF_val(hist_line, i_multitimeframe) : na
+
+f_get_osc_for_div() =>
+    switch i_div_osc_source
+        "RSI" => rsi_val
+        "Stochastic" => stoch_k_val
+        "CCI" => cci_val
+        "MFI" => mfi_val
+        "MACD Hist" => hist_line
+        => na
+
+osc_for_div = f_get_osc_for_div()
+
+pl_osc = ta.pivotlow(osc_for_div, i_div_pivotLookback, i_div_pivotLookback)
+ph_osc = ta.pivothigh(osc_for_div, i_div_pivotLookback, i_div_pivotLookback)
+pl_price = ta.pivotlow(low, i_div_pivotLookback, i_div_pivotLookback)
+ph_price = ta.pivothigh(high, i_div_pivotLookback, i_div_pivotLookback)
+
+var line bull_div_line_osc = na
+var line bull_div_line_price = na
+if i_show_regular_bull and pl_osc
+    pl_osc_prev = ta.valuewhen(pl_osc, osc_for_div, 1)
+    pl_price_prev = ta.valuewhen(pl_price, low, 1)
+    pl_osc_time_prev = ta.valuewhen(pl_osc, time, 1)
+    if low < pl_price_prev and osc_for_div > pl_osc_prev
+        bull_div_line_osc := line.new(pl_osc_time_prev, pl_osc_prev, time, osc_for_div, color=color.green, width=i_div_line_width)
+        bull_div_line_price := line.new(pl_osc_time_prev, pl_price_prev, time, low, color=color.green, width=i_div_line_width)
+
+var line bear_div_line_osc = na
+var line bear_div_line_price = na
+if i_show_regular_bear and ph_osc
+    ph_osc_prev = ta.valuewhen(ph_osc, osc_for_div, 1)
+    ph_price_prev = ta.valuewhen(ph_price, high, 1)
+    ph_osc_time_prev = ta.valuewhen(ph_osc, time, 1)
+    if high > ph_price_prev and osc_for_div < ph_osc_prev
+        bear_div_line_osc := line.new(ph_osc_time_prev, ph_osc_prev, time, osc_for_div, color=color.red, width=i_div_line_width)
+        bear_div_line_price := line.new(ph_osc_time_prev, ph_price_prev, time, high, color=color.red, width=i_div_line_width)
+
+var line hidden_bull_div_line_osc = na
+var line hidden_bull_div_line_price = na
+if i_show_hidden_bull and pl_osc
+    pl_osc_prev = ta.valuewhen(pl_osc, osc_for_div, 1)
+    pl_price_prev = ta.valuewhen(pl_price, low, 1)
+    pl_osc_time_prev = ta.valuewhen(pl_osc, time, 1)
+    if low > pl_price_prev and osc_for_div < pl_osc_prev
+        hidden_bull_div_line_osc := line.new(pl_osc_time_prev, pl_osc_prev, time, osc_for_div, color=color.new(color.green, 50), width=i_div_line_width, style=line.style_dashed)
+        hidden_bull_div_line_price := line.new(pl_osc_time_prev, pl_price_prev, time, low, color=color.new(color.green, 50), width=i_div_line_width, style=line.style_dashed)
+
+var line hidden_bear_div_line_osc = na
+var line hidden_bear_div_line_price = na
+if i_show_hidden_bear and ph_osc
+    ph_osc_prev = ta.valuewhen(ph_osc, osc_for_div, 1)
+    ph_price_prev = ta.valuewhen(ph_price, high, 1)
+    ph_osc_time_prev = ta.valuewhen(ph_osc, time, 1)
+    if high < ph_price_prev and osc_for_div > ph_osc_prev
+        hidden_bear_div_line_osc := line.new(ph_osc_time_prev, ph_osc_prev, time, osc_for_div, color=color.new(color.red, 50), width=i_div_line_width, style=line.style_dashed)
+        hidden_bear_div_line_price := line.new(ph_osc_time_prev, ph_price_prev, time, high, color=color.new(color.red, 50), width=i_div_line_width, style=line.style_dashed)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [3] PLOTTING & VISUALIZATION
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+plot1_val = switch oscillator_to_plot
+    "RSI" => i_rsi_enabled ? rsi_val : na
+    "Stochastic" => i_stoch_enabled ? stoch_k_val : na
+    "CCI" => i_cci_enabled ? cci_val : na
+    "MFI" => i_mfi_enabled ? mfi_val : na
+    "MACD" => i_macd_enabled ? macd_line : na
+    => na
+
+plot2_val = switch oscillator_to_plot
+    "RSI" => i_rsi_enabled and i_rsi_showMa ? rsi_ma : na
+    "Stochastic" => i_stoch_enabled ? stoch_d_val : na
+    "CCI" => i_cci_enabled and i_cci_showMa ? cci_ma : na
+    "MACD" => i_macd_enabled ? signal_line : na
+    => na
+
+plot_hist_val = oscillator_to_plot == "MACD" and i_macd_enabled ? hist_line : na
+hist_color = color.new(plot_hist_val > 0 ? (plot_hist_val > plot_hist_val[1] ? color.aqua : color.blue) : (plot_hist_val < plot_hist_val[1] ? color.maroon : color.red), 30)
+
+p1 = plot(plot1_val, "Primary Line", color=color.new(color.white, 20), linewidth=2)
+p2 = plot(plot2_val, "Secondary Line", color=color.new(color.yellow, 40), linewidth=1)
+plot(plot_hist_val, "Histogram", color=hist_color, style=plot.style_histogram, linewidth=3)
+
+ob_level = switch oscillator_to_plot
+    "RSI" => i_rsi_ob
+    "Stochastic" => i_stoch_ob
+    "CCI" => i_cci_ob
+    "MFI" => i_mfi_ob
+    => na
+    
+os_level = switch oscillator_to_plot
+    "RSI" => i_rsi_os
+    "Stochastic" => i_stoch_os
+    "CCI" => i_cci_os
+    "MFI" => i_mfi_os
+    => na
+
+zeroline = hline(0, "Zero Line", color.gray, linestyle=hline.style_dashed)
+ob_line = hline(ob_level, "Overbought", color.red, linestyle=hline.style_solid, linewidth=1)
+os_line = hline(os_level, "Oversold", color.green, linestyle=hline.style_solid, linewidth=1)
+if not na(ob_level) and not na(os_level)
+    fill(ob_line, os_line, color=color.new(color.purple, 95))
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [4] ON-SCREEN DASHBOARD
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+f_getDashboardPosition(pos) =>
+    switch pos
+        "top_right" => position.top_right, "top_left" => position.top_left, "middle_right" => position.middle_right
+        "middle_left" => position.middle_left, "bottom_right" => position.bottom_right, "bottom_left" => position.bottom_left
+
+var table g_dashboard = table.new(f_getDashboardPosition(i_dashboardPosition), 6, 6, bgcolor=color.new(color.black, 60), border_width=1)
+
+f_statusColor(val, ob, os) => val > ob ? color.red : val < os ? color.green : color.gray
+f_trendColor(val, prev_val) => val > prev_val ? color.lime : val < prev_val ? color.maroon : color.gray
+
+if i_enableDashboard and barstate.islast
+    table.cell(g_dashboard, 0, 0, "Indicator", text_color=color.white, bgcolor=color.gray)
+    table.cell(g_dashboard, 1, 0, "Value", text_color=color.white, bgcolor=color.gray)
+    table.cell(g_dashboard, 2, 0, "Status", text_color=color.white, bgcolor=color.gray)
+    table.cell(g_dashboard, 3, 0, "Trend", text_color=color.white, bgcolor=color.gray)
+    table.cell(g_dashboard, 4, 0, "HTF Val", text_color=color.white, bgcolor=color.gray)
+    table.cell(g_dashboard, 5, 0, "HTF Status", text_color=color.white, bgcolor=color.gray)
+    
+    if i_rsi_enabled
+        table.cell(g_dashboard, 0, 1, "RSI (" + str.tostring(i_rsi_len) + ")", text_color=color.white)
+        table.cell(g_dashboard, 1, 1, str.tostring(rsi_val, "#.00"), text_color=color.white)
+        table.cell(g_dashboard, 2, 1, rsi_val > i_rsi_ob ? "OB" : rsi_val < i_rsi_os ? "OS" : "Neutral", text_color=f_statusColor(rsi_val, i_rsi_ob, i_rsi_os))
+        table.cell(g_dashboard, 3, 1, rsi_val > rsi_val[1] ? "Up" : rsi_val < rsi_val[1] ? "Down" : "Flat", text_color=f_trendColor(rsi_val, rsi_val[1]))
+        table.cell(g_dashboard, 4, 1, str.tostring(rsi_htf, "#.00"), text_color=color.white)
+        table.cell(g_dashboard, 5, 1, rsi_htf > i_rsi_ob ? "OB" : rsi_htf < i_rsi_os ? "OS" : "Neutral", text_color=f_statusColor(rsi_htf, i_rsi_ob, i_rsi_os))
+
+    if i_stoch_enabled
+        table.cell(g_dashboard, 0, 2, "Stoch (" + str.tostring(i_stoch_len) + ")", text_color=color.white)
+        table.cell(g_dashboard, 1, 2, str.tostring(stoch_k_val, "#.00"), text_color=color.white)
+        table.cell(g_dashboard, 2, 2, stoch_k_val > i_stoch_ob ? "OB" : stoch_k_val < i_stoch_os ? "OS" : "Neutral", text_color=f_statusColor(stoch_k_val, i_stoch_ob, i_stoch_os))
+        table.cell(g_dashboard, 3, 2, stoch_k_val > stoch_k_val[1] ? "Up" : stoch_k_val < stoch_k_val[1] ? "Down" : "Flat", text_color=f_trendColor(stoch_k_val, stoch_k_val[1]))
+        table.cell(g_dashboard, 4, 2, str.tostring(stoch_k_htf, "#.00"), text_color=color.white)
+        table.cell(g_dashboard, 5, 2, stoch_k_htf > i_stoch_ob ? "OB" : stoch_k_htf < i_stoch_os ? "OS" : "Neutral", text_color=f_statusColor(stoch_k_htf, i_stoch_ob, i_stoch_os))
+
+    if i_cci_enabled
+        table.cell(g_dashboard, 0, 3, "CCI (" + str.tostring(i_cci_len) + ")", text_color=color.white)
+        table.cell(g_dashboard, 1, 3, str.tostring(cci_val, "#.00"), text_color=color.white)
+        table.cell(g_dashboard, 2, 3, cci_val > i_cci_ob ? "OB" : cci_val < i_cci_os ? "OS" : "Neutral", text_color=f_statusColor(cci_val, i_cci_ob, i_cci_os))
+        table.cell(g_dashboard, 3, 3, cci_val > cci_val[1] ? "Up" : cci_val < cci_val[1] ? "Down" : "Flat", text_color=f_trendColor(cci_val, cci_val[1]))
+        table.cell(g_dashboard, 4, 3, str.tostring(cci_htf, "#.00"), text_color=color.white)
+        table.cell(g_dashboard, 5, 3, cci_htf > i_cci_ob ? "OB" : cci_htf < i_cci_os ? "OS" : "Neutral", text_color=f_statusColor(cci_htf, i_cci_ob, i_cci_os))
+
+    if i_mfi_enabled
+        table.cell(g_dashboard, 0, 4, "MFI (" + str.tostring(i_mfi_len) + ")", text_color=color.white)
+        table.cell(g_dashboard, 1, 4, str.tostring(mfi_val, "#.00"), text_color=color.white)
+        table.cell(g_dashboard, 2, 4, mfi_val > i_mfi_ob ? "OB" : mfi_val < i_mfi_os ? "OS" : "Neutral", text_color=f_statusColor(mfi_val, i_mfi_ob, i_mfi_os))
+        table.cell(g_dashboard, 3, 4, mfi_val > mfi_val[1] ? "Up" : mfi_val < mfi_val[1] ? "Down" : "Flat", text_color=f_trendColor(mfi_val, mfi_val[1]))
+        table.cell(g_dashboard, 4, 4, str.tostring(mfi_htf, "#.00"), text_color=color.white)
+        table.cell(g_dashboard, 5, 4, mfi_htf > i_mfi_ob ? "OB" : mfi_htf < i_mfi_os ? "OS" : "Neutral", text_color=f_statusColor(mfi_htf, i_mfi_ob, i_mfi_os))
+
+    if i_macd_enabled
+        table.cell(g_dashboard, 0, 5, "MACD Hist", text_color=color.white)
+        table.cell(g_dashboard, 1, 5, str.tostring(hist_line, "#.0000"), text_color=color.white)
+        table.cell(g_dashboard, 2, 5, macd_line > signal_line ? "Bullish" : "Bearish", text_color=macd_line > signal_line ? color.lime : color.red)
+        table.cell(g_dashboard, 3, 5, hist_line > hist_line[1] ? "Growing" : "Fading", text_color=f_trendColor(hist_line, hist_line[1]))
+        table.cell(g_dashboard, 4, 5, str.tostring(macd_hist_htf, "#.0000"), text_color=color.white)
+        table.cell(g_dashboard, 5, 5, macd_hist_htf > 0 ? "Bullish" : "Bearish", text_color=macd_hist_htf > 0 ? color.lime : color.red)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [5] ALERTS
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+alertcondition(i_rsi_enabled and ta.crossunder(rsi_val, i_rsi_os), "RSI Oversold Entry", "RSI entered Oversold on {{ticker}}.")
+alertcondition(i_rsi_enabled and ta.crossover(rsi_val, i_rsi_os), "RSI Oversold Exit", "RSI exited Oversold on {{ticker}}.")
+alertcondition(i_rsi_enabled and ta.crossover(rsi_val, i_rsi_ob), "RSI Overbought Entry", "RSI entered Overbought on {{ticker}}.")
+alertcondition(i_rsi_enabled and ta.crossunder(rsi_val, i_rsi_ob), "RSI Overbought Exit", "RSI exited Overbought on {{ticker}}.")
+alertcondition(i_rsi_enabled and ta.cross(rsi_val, rsi_ma), "RSI/MA Cross", "RSI crossed its MA on {{ticker}}.")
+
+alertcondition(i_stoch_enabled and ta.crossover(stoch_k_val, stoch_d_val), "Stochastic Bullish Cross", "Stochastic %K crossed above %D on {{ticker}}.")
+alertcondition(i_stoch_enabled and ta.crossunder(stoch_k_val, stoch_d_val), "Stochastic Bearish Cross", "Stochastic %K crossed below %D on {{ticker}}.")
+
+alertcondition(i_cci_enabled and ta.crossover(cci_val, i_cci_os), "CCI Oversold Exit", "CCI exited Oversold on {{ticker}}.")
+alertcondition(i_cci_enabled and ta.crossunder(cci_val, i_cci_ob), "CCI Overbought Exit", "CCI exited Overbought on {{ticker}}.")
+
+alertcondition(i_macd_enabled and ta.crossover(macd_line, signal_line), "MACD Bullish Cross", "MACD line crossed above Signal line on {{ticker}}.")
+alertcondition(i_macd_enabled and ta.crossunder(macd_line, signal_line), "MACD Bearish Cross", "MACD line crossed below Signal line on {{ticker}}.")
+alertcondition(i_macd_enabled and ta.crossover(hist_line, 0), "MACD Histogram Bullish", "MACD histogram crossed above zero on {{ticker}}.")
+alertcondition(i_macd_enabled and ta.crossunder(hist_line, 0), "MACD Histogram Bearish", "MACD histogram crossed below zero on {{ticker}}.")
+
+alertcondition(i_div_enabled and i_show_regular_bull and line.get_x2(bull_div_line_price) == time, "Regular Bullish Divergence", "Regular Bullish Divergence detected on {{ticker}} with {{input.string.i_div_osc_source}}.")
+alertcondition(i_div_enabled and i_show_regular_bear and line.get_x2(bear_div_line_price) == time, "Regular Bearish Divergence", "Regular Bearish Divergence detected on {{ticker}} with {{input.string.i_div_osc_source}}.")
+alertcondition(i_div_enabled and i_show_hidden_bull and line.get_x2(hidden_bull_div_line_price) == time, "Hidden Bullish Divergence", "Hidden Bullish Divergence detected on {{ticker}} with {{input.string.i_div_osc_source}}.")
+alertcondition(i_div_enabled and i_show_hidden_bear and line.get_x2(hidden_bear_div_line_price) == time, "Hidden Bearish Divergence", "Hidden Bearish Divergence detected on {{ticker}} with {{input.string.i_div_osc_source}}.")

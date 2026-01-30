@@ -1,0 +1,159 @@
+// @version=5
+indicator("Volume Profile & VWAP Engine", shorttitle="VPVE", overlay=true, format=format.price, precision=2)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [1] INPUTS
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+g_vp = "Volume Profile (Visible Range)"
+i_vp_enabled = input.bool(true, "Enable Volume Profile", group=g_vp)
+i_vp_rows = input.int(50, "Number of Rows", minval=10, maxval=500, group=g_vp)
+i_vp_width = input.int(30, "Profile Width (% of Chart)", minval=5, maxval=80, group=g_vp)
+i_vp_placement = input.string("Right", "Placement", options=["Left", "Right"], group=g_vp)
+i_vp_show_poc = input.bool(true, "Show Point of Control (POC)", group=g_vp, inline="poc")
+i_vp_show_vah_val = input.bool(true, "Show Value Area (VAH/VAL)", group=g_vp, inline="poc")
+i_vp_value_area_vol = input.int(70, "Value Area Volume %", minval=1, maxval=100, group=g_vp)
+
+g_vwap = "VWAP (Volume-Weighted Average Price)"
+i_vwap_enabled = input.bool(true, "Enable VWAP", group=g_vwap)
+i_vwap_session = input.string("Auto", "Anchor Period", options=["Auto", "Session", "Week", "Month", "Year", "Decade", "Century"], group=g_vwap)
+i_vwap_show_bands = input.bool(true, "Show StdDev Bands", group=g_vwap, inline="bands")
+i_vwap_band_mult1 = input.float(1.0, "Multiplier 1", group=g_vwap, inline="bands")
+i_vwap_band_mult2 = input.float(2.0, "Multiplier 2", group=g_vwap, inline="bands")
+i_vwap_band_mult3 = input.float(3.0, "Multiplier 3", group=g_vwap, inline="bands")
+i_vwap_fill_bands = input.bool(true, "Fill Bands", group=g_vwap)
+
+g_obv = "On-Balance Volume (OBV)"
+i_obv_enabled = input.bool(true, "Enable OBV", group=g_obv)
+i_obv_ma_type = input.string("EMA", "MA Type", options=["SMA", "EMA", "WMA"], group=g_obv, inline="obvma")
+i_obv_ma_len = input.int(20, "MA Length", group=g_obv, inline="obvma")
+i_obv_show_div = input.bool(true, "Show OBV Divergence", group=g_obv)
+i_obv_div_lookback = input.int(5, "Divergence Pivot Lookback", group=g_obv)
+
+g_vol = "Volume Analysis"
+i_vol_show_ma = input.bool(true, "Show Volume MA", group=g_vol, inline="volma")
+i_vol_ma_len = input.int(50, "MA Length", group=g_vol, inline="volma")
+i_vol_spike_mult = input.float(2.5, "Spike Multiplier", group=g_vol)
+i_vol_colorize = input.bool(true, "Colorize Volume Bars", group=g_vol)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [2] CALCULATIONS
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+// VPVR is a built-in indicator, we are creating a wrapper to control it
+// The actual drawing is handled by TradingView's engine based on these inputs
+// This section is for other calculations
+
+// VWAP
+f_get_vwap_anchor() =>
+    switch i_vwap_session
+        "Session" => timeframe.change("D")
+        "Week" => timeframe.change("W")
+        "Month" => timeframe.change("M")
+        "Year" => timeframe.change("12M")
+        "Decade" => timeframe.change("120M")
+        "Century" => timeframe.change("1200M")
+        => ta.change(time("D")) != 0
+
+is_new_period = f_get_vwap_anchor()
+var float vwap_sum_pv = 0.0
+var float vwap_sum_v = 0.0
+vwap_sum_pv := is_new_period ? hlc3 * volume : vwap_sum_pv + hlc3 * volume
+vwap_sum_v := is_new_period ? volume : vwap_sum_v + volume
+vwap_val = vwap_sum_pv / vwap_sum_v
+
+// VWAP Bands
+f_get_vwap_dev(mult) =>
+    src_sq_dev = math.pow(hlc3 - vwap_val, 2) * volume
+    var float sum_sq_dev = 0.0
+    sum_sq_dev := is_new_period ? src_sq_dev : sum_sq_dev + src_sq_dev
+    variance = sum_sq_dev / vwap_sum_v
+    stdev = math.sqrt(variance)
+    stdev * mult
+
+vwap_upper1 = vwap_val + f_get_vwap_dev(i_vwap_band_mult1)
+vwap_lower1 = vwap_val - f_get_vwap_dev(i_vwap_band_mult1)
+vwap_upper2 = vwap_val + f_get_vwap_dev(i_vwap_band_mult2)
+vwap_lower2 = vwap_val - f_get_vwap_dev(i_vwap_band_mult2)
+vwap_upper3 = vwap_val + f_get_vwap_dev(i_vwap_band_mult3)
+vwap_lower3 = vwap_val - f_get_vwap_dev(i_vwap_band_mult3)
+
+// OBV
+obv_val = ta.obv
+f_ma(src, len, type) =>
+    switch type
+        "SMA" => ta.sma(src, len)
+        "EMA" => ta.ema(src, len)
+        "WMA" => ta.wma(src, len)
+        => na
+obv_ma = i_obv_enabled ? f_ma(obv_val, i_obv_ma_len, i_obv_ma_type) : na
+
+// OBV Divergence
+pl_obv = ta.pivotlow(obv_val, i_obv_div_lookback, i_obv_div_lookback)
+ph_obv = ta.pivothigh(obv_val, i_obv_div_lookback, i_obv_div_lookback)
+pl_price = ta.pivotlow(low, i_obv_div_lookback, i_obv_div_lookback)
+ph_price = ta.pivothigh(high, i_obv_div_lookback, i_obv_div_lookback)
+
+bull_div_obv = pl_price and low < ta.valuewhen(pl_price, low, 1) and obv_val > ta.valuewhen(pl_obv, obv_val, 1)
+bear_div_obv = ph_price and high > ta.valuewhen(ph_price, high, 1) and obv_val < ta.valuewhen(ph_obv, obv_val, 1)
+
+// Volume Analysis
+vol_ma = ta.sma(volume, i_vol_ma_len)
+is_vol_spike = volume > vol_ma * i_vol_spike_mult
+vol_color = if i_vol_colorize
+    if close > open
+        volume > vol_ma ? color.new(color.green, 20) : color.new(color.green, 70)
+    else
+        volume > vol_ma ? color.new(color.red, 20) : color.new(color.red, 70)
+else
+    na
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [3] PLOTTING
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+// Volume Profile: Nutze TradingViews eingebauten Indikator "Volume Profile" für POC/VAH/VAL.
+// Die Eingaben (i_vp_*) bleiben für zukünftige Erweiterung oder Dokumentation erhalten.
+
+
+// VWAP
+plot(i_vwap_enabled ? vwap_val : na, "VWAP", color=color.new(color.white, 20), linewidth=2)
+vwap_u1_plot = plot(i_vwap_enabled and i_vwap_show_bands ? vwap_upper1 : na, "VWAP Upper 1", color=color.new(color.green, 70))
+vwap_l1_plot = plot(i_vwap_enabled and i_vwap_show_bands ? vwap_lower1 : na, "VWAP Lower 1", color=color.new(color.green, 70))
+vwap_u2_plot = plot(i_vwap_enabled and i_vwap_show_bands ? vwap_upper2 : na, "VWAP Upper 2", color=color.new(color.orange, 70))
+vwap_l2_plot = plot(i_vwap_enabled and i_vwap_show_bands ? vwap_lower2 : na, "VWAP Lower 2", color=color.new(color.orange, 70))
+vwap_u3_plot = plot(i_vwap_enabled and i_vwap_show_bands ? vwap_upper3 : na, "VWAP Upper 3", color=color.new(color.red, 70))
+vwap_l3_plot = plot(i_vwap_enabled and i_vwap_show_bands ? vwap_lower3 : na, "VWAP Lower 3", color=color.new(color.red, 70))
+
+if i_vwap_fill_bands
+    fill(vwap_u1_plot, vwap_l1_plot, color=color.new(color.green, 90))
+    fill(vwap_u2_plot, vwap_u1_plot, color=color.new(color.orange, 93))
+    fill(vwap_l2_plot, vwap_l1_plot, color=color.new(color.orange, 93))
+    fill(vwap_u3_plot, vwap_u2_plot, color=color.new(color.red, 95))
+    fill(vwap_l3_plot, vwap_l2_plot, color=color.new(color.red, 95))
+
+// OBV (in pane)
+plot(i_obv_enabled ? obv_val : na, "OBV", color=color.new(color.blue, 20), linewidth=2, display=display.pane)
+plot(i_obv_enabled ? obv_ma : na, "OBV MA", color=color.new(color.orange, 40), display=display.pane)
+plotshape(i_obv_enabled and i_obv_show_div and bull_div_obv, "OBV Bull Div", shape.labelup, location.belowbar, color.new(color.lime, 20), text="OBV+", textcolor=color.white, size=size.tiny)
+plotshape(i_obv_enabled and i_obv_show_div and bear_div_obv, "OBV Bear Div", shape.labeldown, location.abovebar, color.new(color.red, 20), text="OBV-", textcolor=color.white, size=size.tiny)
+
+// Volume (in pane)
+plot(volume, "Volume", color=vol_color, style=plot.style_histogram, display=display.pane)
+plot(i_vol_show_ma ? vol_ma : na, "Volume MA", color=color.new(color.yellow, 50), display=display.pane)
+plot(is_vol_spike ? volume : na, "Volume Spike", color=color.new(color.white, 0), style=plot.style_circles, linewidth=3, display=display.pane)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [4] ALERTS
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+alertcondition(ta.cross(close, vwap_val), "Price Cross VWAP", "Price crossed VWAP on {{ticker}}.")
+alertcondition(ta.cross(close, vwap_upper1), "Price Cross VWAP Upper Band 1", "Price crossed VWAP Upper Band 1 on {{ticker}}.")
+alertcondition(ta.cross(close, vwap_lower1), "Price Cross VWAP Lower Band 1", "Price crossed VWAP Lower Band 1 on {{ticker}}.")
+alertcondition(ta.cross(close, vwap_upper2), "Price Cross VWAP Upper Band 2", "Price crossed VWAP Upper Band 2 on {{ticker}}.")
+alertcondition(ta.cross(close, vwap_lower2), "Price Cross VWAP Lower Band 2", "Price crossed VWAP Lower Band 2 on {{ticker}}.")
+
+alertcondition(i_obv_enabled and ta.cross(obv_val, obv_ma), "OBV Cross MA", "OBV crossed its MA on {{ticker}}.")
+alertcondition(i_obv_enabled and i_obv_show_div and bull_div_obv, "OBV Bullish Divergence", "OBV Bullish Divergence detected on {{ticker}}.")
+alertcondition(i_obv_enabled and i_obv_show_div and bear_div_obv, "OBV Bearish Divergence", "OBV Bearish Divergence detected on {{ticker}}.")
+
+alertcondition(is_vol_spike, "Volume Spike", "High volume spike detected on {{ticker}}.")

@@ -1,0 +1,166 @@
+// @version=5
+
+indicator("Advanced Moving Average Ribbon", shorttitle="AMAR", overlay=true)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [1] INPUTS
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+g_mode = "Calculation Mode"
+i_mode = input.string("Ribbon", "Mode", options=["Ribbon", "GMMA (Guppy)", "Dual MA Cross"], group=g_mode)
+
+// --- Ribbon Inputs ---
+g_ribbon = "Ribbon Mode Settings"
+i_ribbon_ma_type = input.string("EMA", "MA Type", options=["SMA", "EMA", "WMA", "HMA", "ALMA", "TEMA", "DEMA"], group=g_ribbon)
+i_ribbon_src = input.source(close, "Source", group=g_ribbon)
+i_ribbon_start_len = input.int(20, "Start Length", group=g_ribbon, inline="r1")
+i_ribbon_increment = input.int(5, "Increment", group=g_ribbon, inline="r1")
+i_ribbon_count = input.int(8, "Number of MAs", minval=2, maxval=12, group=g_ribbon, inline="r1")
+i_ribbon_fill = input.bool(true, "Fill Ribbon", group=g_ribbon)
+i_ribbon_color_slope = input.bool(true, "Color by Slope", group=g_ribbon)
+
+// --- GMMA Inputs ---
+g_gmma = "GMMA (Guppy) Mode Settings"
+i_gmma_fast_type = input.string("EMA", "Fast MA Type", group=g_gmma)
+i_gmma_slow_type = input.string("EMA", "Slow MA Type", group=g_gmma)
+i_gmma_show_fast = input.bool(true, "Show Fast MAs (3,5,8,10,12,15)", group=g_gmma)
+i_gmma_show_slow = input.bool(true, "Show Slow MAs (30,35,40,45,50,60)", group=g_gmma)
+i_gmma_fill_fast = input.bool(true, "Fill Fast Group", group=g_gmma, inline="gf")
+i_gmma_fill_slow = input.bool(true, "Fill Slow Group", group=g_gmma, inline="gs")
+
+// --- Dual MA Cross Inputs ---
+g_dual = "Dual MA Cross Mode Settings"
+i_dual_fast_type = input.string("EMA", "Fast MA Type", options=["SMA", "EMA", "WMA", "HMA", "ALMA", "TEMA", "DEMA"], group=g_dual)
+i_dual_fast_len = input.int(50, "Fast MA Length", group=g_dual)
+i_dual_slow_type = input.string("SMA", "Slow MA Type", options=["SMA", "EMA", "WMA", "HMA", "ALMA", "TEMA", "DEMA"], group=g_dual)
+i_dual_slow_len = input.int(200, "Slow MA Length", group=g_dual)
+i_dual_src = input.source(close, "Source", group=g_dual)
+i_dual_bg_color = input.bool(true, "Color Background on Trend", group=g_dual)
+
+// --- ALMA Specific Inputs ---
+g_alma = "ALMA Settings (if selected)"
+i_alma_offset = input.float(0.85, "Offset", group=g_alma, step=0.05)
+i_alma_sigma = input.float(6, "Sigma", group=g_alma)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [2] FUNCTIONS & CALCULATIONS
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+f_ma(src, len, type) =>
+    switch type
+        "SMA" => ta.sma(src, len)
+        "EMA" => ta.ema(src, len)
+        "WMA" => ta.wma(src, len)
+        "HMA" => ta.hma(src, len)
+        "ALMA" => ta.alma(src, len, i_alma_offset, i_alma_sigma)
+        "TEMA" => ta.ema(src, len) * 3 - ta.ema(ta.ema(src, len), len) * 3 + ta.ema(ta.ema(ta.ema(src, len), len), len)
+        "DEMA" => ta.ema(src, len) * 2 - ta.ema(ta.ema(src, len), len)
+        => na
+
+// Ribbon Calculations
+ribbon_ma1 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 0, i_ribbon_ma_type)
+ribbon_ma2 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 1, i_ribbon_ma_type)
+ribbon_ma3 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 2, i_ribbon_ma_type)
+ribbon_ma4 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 3, i_ribbon_ma_type)
+ribbon_ma5 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 4, i_ribbon_ma_type)
+ribbon_ma6 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 5, i_ribbon_ma_type)
+ribbon_ma7 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 6, i_ribbon_ma_type)
+ribbon_ma8 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 7, i_ribbon_ma_type)
+ribbon_ma9 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 8, i_ribbon_ma_type)
+ribbon_ma10 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 9, i_ribbon_ma_type)
+ribbon_ma11 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 10, i_ribbon_ma_type)
+ribbon_ma12 = f_ma(i_ribbon_src, i_ribbon_start_len + i_ribbon_increment * 11, i_ribbon_ma_type)
+
+f_slope_color(ma) =>
+    ma > ma[1] ? color.green : ma < ma[1] ? color.red : color.gray
+
+// GMMA Calculations
+gmma_fast1 = f_ma(close, 3, i_gmma_fast_type)
+gmma_fast2 = f_ma(close, 5, i_gmma_fast_type)
+gmma_fast3 = f_ma(close, 8, i_gmma_fast_type)
+gmma_fast4 = f_ma(close, 10, i_gmma_fast_type)
+gmma_fast5 = f_ma(close, 12, i_gmma_fast_type)
+gmma_fast6 = f_ma(close, 15, i_gmma_fast_type)
+
+gmma_slow1 = f_ma(close, 30, i_gmma_slow_type)
+gmma_slow2 = f_ma(close, 35, i_gmma_slow_type)
+gmma_slow3 = f_ma(close, 40, i_gmma_slow_type)
+gmma_slow4 = f_ma(close, 45, i_gmma_slow_type)
+gmma_slow5 = f_ma(close, 50, i_gmma_slow_type)
+gmma_slow6 = f_ma(close, 60, i_gmma_slow_type)
+
+// Dual MA Cross Calculations
+dual_fast_ma = f_ma(i_dual_src, i_dual_fast_len, i_dual_fast_type)
+dual_slow_ma = f_ma(i_dual_src, i_dual_slow_len, i_dual_slow_type)
+is_uptrend = dual_fast_ma > dual_slow_ma
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [3] PLOTTING
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+if i_mode == "Ribbon"
+    p1 = plot(i_ribbon_count >= 1 ? ribbon_ma1 : na, "R1", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma1) : color.new(color.blue, 80))
+    p2 = plot(i_ribbon_count >= 2 ? ribbon_ma2 : na, "R2", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma2) : color.new(color.blue, 70))
+    p3 = plot(i_ribbon_count >= 3 ? ribbon_ma3 : na, "R3", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma3) : color.new(color.blue, 60))
+    p4 = plot(i_ribbon_count >= 4 ? ribbon_ma4 : na, "R4", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma4) : color.new(color.blue, 50))
+    p5 = plot(i_ribbon_count >= 5 ? ribbon_ma5 : na, "R5", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma5) : color.new(color.blue, 40))
+    p6 = plot(i_ribbon_count >= 6 ? ribbon_ma6 : na, "R6", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma6) : color.new(color.blue, 30))
+    p7 = plot(i_ribbon_count >= 7 ? ribbon_ma7 : na, "R7", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma7) : color.new(color.blue, 20))
+    p8 = plot(i_ribbon_count >= 8 ? ribbon_ma8 : na, "R8", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma8) : color.new(color.blue, 10))
+    p9 = plot(i_ribbon_count >= 9 ? ribbon_ma9 : na, "R9", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma9) : color.new(color.purple, 20))
+    p10 = plot(i_ribbon_count >= 10 ? ribbon_ma10 : na, "R10", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma10) : color.new(color.purple, 30))
+    p11 = plot(i_ribbon_count >= 11 ? ribbon_ma11 : na, "R11", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma11) : color.new(color.purple, 40))
+    p12 = plot(i_ribbon_count >= 12 ? ribbon_ma12 : na, "R12", color=i_ribbon_color_slope ? f_slope_color(ribbon_ma12) : color.new(color.purple, 50))
+    
+    if i_ribbon_fill
+        fill(p1, p8, color=ribbon_ma1 > ribbon_ma8 ? color.new(color.green, 80) : color.new(color.red, 80))
+
+if i_mode == "GMMA"
+    gf1 = plot(i_gmma_show_fast ? gmma_fast1 : na, "GF1", color.new(color.aqua, 50))
+    plot(i_gmma_show_fast ? gmma_fast2 : na, "GF2", color.new(color.aqua, 50))
+    plot(i_gmma_show_fast ? gmma_fast3 : na, "GF3", color.new(color.aqua, 50))
+    plot(i_gmma_show_fast ? gmma_fast4 : na, "GF4", color.new(color.aqua, 50))
+    plot(i_gmma_show_fast ? gmma_fast5 : na, "GF5", color.new(color.aqua, 50))
+    gf6 = plot(i_gmma_show_fast ? gmma_fast6 : na, "GF6", color.new(color.aqua, 50))
+    
+    gs1 = plot(i_gmma_show_slow ? gmma_slow1 : na, "GS1", color.new(color.red, 50))
+    plot(i_gmma_show_slow ? gmma_slow2 : na, "GS2", color.new(color.red, 50))
+    plot(i_gmma_show_slow ? gmma_slow3 : na, "GS3", color.new(color.red, 50))
+    plot(i_gmma_show_slow ? gmma_slow4 : na, "GS4", color.new(color.red, 50))
+    plot(i_gmma_show_slow ? gmma_slow5 : na, "GS5", color.new(color.red, 50))
+    gs6 = plot(i_gmma_show_slow ? gmma_slow6 : na, "GS6", color.new(color.red, 50))
+
+    if i_gmma_fill_fast
+        fill(gf1, gf6, color=color.new(color.aqua, 90))
+    if i_gmma_fill_slow
+        fill(gs1, gs6, color=color.new(color.red, 90))
+
+if i_mode == "Dual MA Cross"
+    plot(dual_fast_ma, "Fast MA", color=color.new(color.orange, 20), linewidth=2)
+    plot(dual_slow_ma, "Slow MA", color=color.new(color.blue, 20), linewidth=3)
+    
+    bg_color = if i_dual_bg_color and is_uptrend
+        color.new(color.green, 85)
+    else if i_dual_bg_color and not is_uptrend
+        color.new(color.red, 85)
+    else
+        na
+    bgcolor(bg_color)
+
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+// [4] ALERTS
+// —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+ribbon_bull_cross = i_mode == "Ribbon" and ta.crossover(ribbon_ma1, ribbon_ma8)
+ribbon_bear_cross = i_mode == "Ribbon" and ta.crossunder(ribbon_ma1, ribbon_ma8)
+alertcondition(ribbon_bull_cross, "Ribbon Bullish Cross", "MA Ribbon crossed bullish on {{ticker}}.")
+alertcondition(ribbon_bear_cross, "Ribbon Bearish Cross", "MA Ribbon crossed bearish on {{ticker}}.")
+
+gmma_bull_cross = i_mode == "GMMA" and ta.crossover(gmma_fast1, gmma_slow6)
+gmma_bear_cross = i_mode == "GMMA" and ta.crossunder(gmma_fast1, gmma_slow6)
+alertcondition(gmma_bull_cross, "GMMA Bullish Cross", "GMMA fast group crossed above slow group on {{ticker}}.")
+alertcondition(gmma_bear_cross, "GMMA Bearish Cross", "GMMA fast group crossed below slow group on {{ticker}}.")
+
+dual_bull_cross = i_mode == "Dual MA Cross" and ta.crossover(dual_fast_ma, dual_slow_ma)
+dual_bear_cross = i_mode == "Dual MA Cross" and ta.crossunder(dual_fast_ma, dual_slow_ma)
+alertcondition(dual_bull_cross, "Dual MA Bullish Cross", "{{input.string.i_dual_fast_type}}({{input.int.i_dual_fast_len}}) crossed above {{input.string.i_dual_slow_type}}({{input.int.i_dual_slow_len}}) on {{ticker}}.")
+alertcondition(dual_bear_cross, "Dual MA Bearish Cross", "{{input.string.i_dual_fast_type}}({{input.int.i_dual_fast_len}}) crossed below {{input.string.i_dual_slow_type}}({{input.int.i_dual_slow_len}}) on {{ticker}}.")
