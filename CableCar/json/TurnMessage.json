@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "type": "object",
+  "title": "CableCar TurnMessageSchema",
+  "required": [
+    "posX",
+    "posY",
+    "fromSupply",
+    "rotation",
+    "gameStateVerificationInfo"
+  ],
+  "properties": {
+    "posX": {
+      "enum": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "type": "integer"
+    },
+    "posY": {
+      "enum": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "type": "integer"
+    },
+    "fromSupply": {
+      "type": "boolean"
+    },
+    "rotation": {
+      "enum": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "type": "integer"
+    },
+    "gameStateVerificationInfo": {
+      "$ref": "#/definitions/gameStateVerificationInfo"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "gameStateVerificationInfo":{
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "supply",
+            "playerScores",
+            "placedTiles"
+          ],
+          "properties": {
+            "supply": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMaximum": 60
+              }
+            },
+            "playerScores": {
+              "type": "array",
+              "items" : {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "placedTiles": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/tileInfo"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tileInfo": {
+      "type": "object",
+      "required": [
+        "x",
+        "y",
+        "id",
+        "rotation"
+      ],
+      "properties": {
+        "x": {
+          "type": "integer",
+          "enum": [1,2,3,4,5,6,7,8]
+        },
+        "y": {
+          "type": "integer",
+          "enum": [1,2,3,4,5,6,7,8]
+        },
+        "id": {
+          "type": "integer",
+          "minimum": 0,
+          "exclusiveMaximum": 60
+        },
+        "rotation": {
+          "type": "integer",
+          "enum": [0,90,180,270]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

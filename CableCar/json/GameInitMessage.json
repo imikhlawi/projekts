@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "type": "object",
+  "title": "CableCar GameInitSchema",
+  "required": [
+    "rotationAllowed",
+    "players",
+    "tileSupply"
+  ],
+  "properties": {
+    "rotationAllowed": {
+      "type": "boolean"
+    },
+    "players": {
+      "type": "array",
+      "items": {
+        "$ref" : "#/definitions/playerInfo"
+      }
+    },
+    "tileSupply": {
+      "type": "array",
+      "items": {
+        "$ref" : "#/definitions/tile"
+      }
+    }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+    "tile": {
+      "type": "object",
+      "required": ["id","connections"],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "connections": {
+          "type": "array",
+          "items" : {
+            "$ref": "#/definitions/connectionInfo"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "connectionInfo": {
+      "type": "object",
+      "required": ["nodeOne", "nodeTwo"],
+      "properties": {
+        "nodeOne": {
+          "type": "integer"
+        },
+        "nodeTwo": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "playerInfo": {
+      "type": "object",
+      "required": ["name", "playerType"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "playerType" : {
+          "enum": ["HUMAN", "AI"],
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
+
