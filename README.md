@@ -10,6 +10,7 @@ Sammlung von Projektbeispielen aus verschiedenen Domänen: Auftragsverwaltung (J
 - [Universitätsprojekte (Hinweis)](#universitätsprojekte-hinweis)
 - [Schnellstart pro Projekt](#schnellstart-pro-projekt)
 - [Voraussetzungen (übergreifend)](#voraussetzungen-übergreifend)
+- [GitHub Actions (CI)](#github-actions-ci)
 - [Lizenz & Hinweise](#lizenz--hinweise)
 
 ---
@@ -162,6 +163,20 @@ Details: [Analyse_Indikatoren/README.md](./Analyse_Indikatoren/README.md)
 - **Eclipse, Xtext, Cinco:** nur für PC-Konfigurator
 
 Projektspezifische Abhängigkeiten stehen in den jeweiligen `README.md` und ggf. `requirements.txt`.
+
+---
+
+## GitHub Actions (CI)
+
+Unter `.github/workflows/` liegen Workflows für **Kotlin** (SchimmenSpiel, CableCar), **Java** (Auftragsverwaltung) und **Python** (BA-Handschrifterkennung, KI-Handels-Framework). Sie laufen bei Push/PR nur, wenn Dateien in den jeweiligen Projektordnern geändert wurden.
+
+| Workflow | Projekte |
+|----------|----------|
+| `ci-kotlin.yml` | SchimmenSpiel, CableCar (Gradle build) |
+| `ci-java.yml` | Auftragsverwaltung (javac) |
+| `ci-python.yml` | BA-Handschrifterkennung, KI-Handels-Framework (pip install, Import-Check) |
+
+**Anpassung:** Branches, JDK-/Python-Version, CableCar-Secret `SOPRA_GITLAB_TOKEN` und optionale Schritte (Tests, Lint) siehe [.github/workflows/README.md](./.github/workflows/README.md).
 
 ---
 

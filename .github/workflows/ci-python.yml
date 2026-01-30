@@ -1,0 +1,67 @@
+# Python: BA-Handschrifterkennung, KI-Handels-Framework
+# Läuft nur, wenn Dateien unter BA-Handschrifterkennung/ oder KI-Handels-Framework/ geändert wurden.
+
+name: CI Python
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'BA-Handschrifterkennung/**'
+      - 'KI-Handels-Framework/**'
+      - '.github/workflows/ci-python.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'BA-Handschrifterkennung/**'
+      - 'KI-Handels-Framework/**'
+      - '.github/workflows/ci-python.yml'
+
+jobs:
+  ba-handschrift:
+    name: BA-Handschrifterkennung
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          cd BA-Handschrifterkennung
+          pip install -r requirements.txt
+
+      - name: Syntax / Import check (offline_CRNN)
+        run: |
+          cd BA-Handschrifterkennung/offline_Model/offline_CRNN
+          python -c "import configuration, utilities, dataset_preparation, image_preprocessing; print('OK')"
+
+  ki-handels:
+    name: KI-Handels-Framework
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install system deps (TA-Lib)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libta-lib-dev
+
+      - name: Install Python dependencies
+        run: |
+          cd KI-Handels-Framework
+          pip install -r requirements.txt
+
+      - name: Import check
+        run: |
+          cd KI-Handels-Framework
+          python -c "import pandas, numpy; print('OK')"
+        # Optional: pytest wenn du Tests hinzufügst
