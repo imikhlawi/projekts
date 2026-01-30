@@ -1,0 +1,24 @@
+# KI-Handels-Framework – Python-Abhängigkeiten
+# Python 3.8+
+
+# Daten & Berechnung
+pandas>=1.3.0
+numpy>=1.20.0
+requests>=2.26.0
+
+# Technische Indikatoren (RSI etc.)
+# Windows: ggf. Wheel von https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib oder:
+#   conda install -c conda-forge ta-lib
+TA-Lib>=0.4.24
+
+# LSTM & ML
+torch>=1.9.0
+scikit-learn>=1.0.0
+joblib>=1.1.0
+
+# Visualisierung
+matplotlib>=3.4.0
+seaborn>=0.11.0
+
+# GUI (Binance-Downloader) – tkinter ist meist mit Python vorinstalliert
+# Unter Linux ggf.: sudo apt-get install python3-tk
