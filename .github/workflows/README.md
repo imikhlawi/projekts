@@ -52,7 +52,7 @@ In **ci-python.yml** steht `python-version: '3.10'`. Du kannst `3.9` oder `3.11`
 
 ### 5. KI-Handels-Framework: TA-Lib
 
-TA-Lib wird im Workflow **aus den Quellen** gebaut (ta-lib-0.4.0), da das Paket unter Ubuntu oft nicht als `libta-lib-dev` verfügbar ist. Wenn du TA-Lib in CI nicht brauchst, kannst du den Schritt „Install TA-Lib (from source)“ entfernen und in `requirements.txt` TA-Lib auskommentieren oder einen separaten `requirements-ci.txt` ohne TA-Lib verwenden.
+In CI wird **`requirements-ci.txt`** verwendet (ohne TA-Lib), damit der Job ohne C-Bibliothek-Build durchläuft. TA-Lib bleibt in **`requirements.txt`** für lokale Nutzung. Wenn du TA-Lib später doch in CI bauen willst, kannst du den Build-Schritt wieder einbauen und wieder `requirements.txt` nutzen.
 
 ### 6. Eigene Schritte (Tests, Lint, Deploy)
 

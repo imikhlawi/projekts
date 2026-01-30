@@ -50,23 +50,11 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install TA-Lib (from source)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential wget
-          wget -q https://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
-          tar xzf ta-lib-0.4.0-src.tar.gz
-          cd ta-lib/
-          ./configure --prefix=/usr
-          make -j$(nproc)
-          sudo make install
-          cd ..
-          sudo ldconfig
-
-      - name: Install Python dependencies
+      - name: Install Python dependencies (ohne TA-Lib)
         run: |
           cd KI-Handels-Framework
-          pip install -r requirements.txt
+          pip install -r requirements-ci.txt
+        # requirements-ci.txt = requirements.txt ohne TA-Lib (C-Build in CI oft fehleranfällig)
 
       - name: Import check
         run: |
