@@ -1,0 +1,4 @@
+cincoProduct Configurator {
+	forceGenerate mgl "model/Mainboard.mgl"
+	forceGenerate mgl "model/PC.mgl"
+}		

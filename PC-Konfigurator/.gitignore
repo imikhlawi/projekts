@@ -1,0 +1,41 @@
+# Build- und Laufzeitausgaben
+bin/
+*.class
+*.jar
+!**/lib/*.jar
+
+# Eclipse (optional: .project/.classpath werden oft mitcommittet für Import)
+# .project
+# .classpath
+# .settings/
+*.launch
+
+# Xtext generierte Dateien (werden beim Build erzeugt)
+**/src-gen/
+**/xtend-gen/
+**/model/generated/*
+!**/model/generated/.gitignore
+*.genmodel
+
+# Cinco/Product generierte Dateien (plugin.xml in compgen ist Quellcode und wird nicht ignoriert)
+# **/plugin.xml
+# **/plugin.properties
+**/resources-gen/
+**/*.cpd.generated
+**/*.ecore
+jabc.project
+
+# ANTLR (Xtext)
+.antlr-generator-3.2.0-patch.jar
+
+# Java/IDE
+*.log
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# IDE-spezifisch
+.idea/
+*.iml
+.vscode/

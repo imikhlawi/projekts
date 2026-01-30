@@ -1,0 +1,150 @@
+import "platform:/resource/info.scce.cinco.fp.compdsl/model/generated/ComponentDsl.ecore" as comp
+
+
+id info.scce.cinco.product.fp.pcconfig.mb.mgl
+stylePath "model/Configurator.style"
+
+@primeviewer
+@generatable("info.scce.cinco.product.fp.pcconfig.mb.html.MBHTML","html-mb-gen")
+@mcam("check")
+@mcam_checkmodule("info.scce.cinco.product.fp.pcconfig.mb.check.CPUSocketTypeCheck")
+@mcam_checkmodule("info.scce.cinco.product.fp.pcconfig.mb.check.RAMTypeCheck")
+graphModel Mainboard {
+	diagramExtension "mb"
+	containableElements(MainboardContainer)
+}
+
+@postCreate("info.scce.cinco.product.fp.pcconfig.mb.hook.MainboardContainerPostCreate")
+@disable(resize)
+container MainboardContainer{
+	
+	style MBStyle("${referencedMB.name}")
+	containableElements(CPUSlot,RAMSlot,GPUSlot) 
+	
+	@pvLabel(name)
+    @pvFileExtension("comp")
+	prime comp.Mainboard as referencedMB
+	      
+	@readOnly  
+    attr EString as name
+    @readOnly
+    attr EString as socket
+    @readOnly
+    attr EString as chipset
+    @readOnly
+    attr EString as typeMemorySlots
+    @readOnly
+    attr EInt as numMemorySlots
+    @readOnly
+    attr EInt as numPCIe16Slots
+    @readOnly
+    attr EInt as numSataPorts 
+    @readOnly
+    attr EInt as powerConsumption
+    @readOnly
+    attr EString as formFactor 
+    @readOnly
+    attr EFloat as price 
+        
+}
+
+@disable(move, resize,delete,create)
+container CPUSlot{
+	style CPUSlotStyle("CPU ${socket}")
+	@readOnly
+	attr EString as socket
+    containableElements(CPUNode)
+}
+
+@disable(move,delete,create,resize)
+container RAMSlot{
+	style RAMSlotStyle("${ramType}")
+	containableElements(RAMNode)
+	@readOnly 
+	attr EString as ramType	
+}
+
+@disable(move, resize,delete,create)
+container GPUSlot{
+	style GPUSlotStyle("GPU Slot")
+	containableElements(GPUNode)
+}
+
+
+@postCreate("info.scce.cinco.product.fp.pcconfig.mb.hook.CPUNodePostCreate")
+@disable(move, resize)
+node CPUNode {
+	
+	style CPUStyle("${referencedCPU.name}")
+	@pvLabel(name)
+    @pvFileExtension("comp")
+	prime comp.Cpu as referencedCPU
+	
+	@readOnly 
+	attr EString as name
+	
+	@readOnly 
+	attr EString as cpuType
+	
+	@readOnly 
+	attr EInt as powerConsumption
+	
+	@readOnly 
+	attr EString as socket
+	
+	@readOnly 
+	attr EFloat as price
+	
+}
+
+@postCreate("info.scce.cinco.product.fp.pcconfig.mb.hook.RAMNodePostCreate")
+@disable(move, resize)
+node RAMNode {
+	
+	style RAMStyle("RAM")
+	@pvLabel(name)
+    @pvFileExtension("comp")
+	prime comp.Ram as referencedRAM
+	        
+    @readOnly 
+	attr EString as name
+	
+	@readOnly 
+	attr EString as ramType
+	
+	@readOnly 
+	attr EInt as capacity
+	
+	@readOnly 
+	attr EInt as powerConsumption
+	
+	@readOnly 
+	attr EFloat as price
+      
+}
+
+@postCreate("info.scce.cinco.product.fp.pcconfig.mb.hook.GPUNodePostCreate")
+@disable(move, resize)
+node GPUNode{
+	
+    style GPUStyle("${referencedGPU.name}")
+	@pvLabel(name)
+    @pvFileExtension("comp")
+	prime comp.Gpu as referencedGPU
+		
+	@readOnly 
+	attr EString as name
+	
+	@readOnly 
+	attr EString as chip
+	
+	@readOnly 
+	attr EInt as memory
+	
+	@readOnly 
+	attr EInt as powerConsumption
+	
+	@readOnly 
+	attr EFloat as price
+	
+}

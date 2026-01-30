@@ -1,0 +1,148 @@
+import "platform:/resource/info.scce.cinco.fp.compdsl/model/generated/ComponentDsl.ecore" as comp
+import "model/Mainboard.mgl" as mb
+
+id info.scce.cinco.product.fp.pcconfig.pc.mgl
+
+stylePath "model/Configurator.style"
+
+@primeviewer
+@mcam("check")
+@mcam_checkmodule("info.scce.cinco.product.fp.pcconfig.pc.check.PowerConsumptionCheck")
+@mcam_checkmodule("info.scce.cinco.product.fp.pcconfig.pc.check.NumberOfDriveNodesCheck")
+@mcam_checkmodule("info.scce.cinco.product.fp.pcconfig.pc.check.FormFactorCheck")
+@generatable("info.scce.cinco.product.fp.pcconfig.pc.html.PCHTML","html-pc-gen")
+graphModel PC {
+	diagramExtension "pc"
+	containableElements(CaseContainer[0,1])
+		
+}
+
+@postCreate("info.scce.cinco.product.fp.pcconfig.pc.hook.CaseContainerPostCreate")
+@disable(resize)
+container CaseContainer{
+    
+    style CaseContainerStyle("Case: ${referencedCase.name}")
+	@pvLabel(name)
+    @pvFileExtension("comp")
+	prime comp.Case as referencedCase
+	containableElements(DriveContainer[0,1],PSUContainer[0,1],PCMainboardContainer[0,1])
+	
+	@readOnly
+	attr EString as caseName
+	@readOnly
+	attr EString as caseFormFactor
+	@readOnly
+	attr EInt as caseInternalSlots
+	@readOnly
+	attr EInt as caseExternalSlots
+	@readOnly
+	attr EFloat as casePrice	
+}
+
+@disable(move,resize,delete,create)
+container DriveContainer{	
+ 
+   style DriveContainerStyle("Storage slots")
+   containableElements(DriveNode)
+
+}
+
+@postCreate("info.scce.cinco.product.fp.pcconfig.pc.hook.DriveNodePostCreate")
+@postDelete("info.scce.cinco.product.fp.pcconfig.pc.hook.DriveNodePostDelete")
+@disable(move,resize)
+node DriveNode{
+	
+	style DriveNodeStyle("${referencedDrive.name}")
+	@pvLabel(name)
+    @pvFileExtension("comp")
+	prime comp.Drive as referencedDrive
+	
+		@readOnly
+		attr EString as driveName 
+		@readOnly
+		attr EString as driveType 
+		@readOnly
+		attr EString as driveDescription 
+		@readOnly
+		attr EInt as drivePowerConsumption  
+		@readOnly
+		attr EFloat as drivePrice
+	}
+
+@disable(move, resize,delete,create)
+container PSUContainer{	
+ 
+    style PSUContainerStyle("Power supply container")
+	containableElements(PSUNode[0,1])	
+}
+
+@postCreate("info.scce.cinco.product.fp.pcconfig.pc.hook.PSUNodePostCreate")
+@disable(move,resize)
+node PSUNode{
+	
+	style PSUNodeStyle("Power supply: ${referencedPSU.name}")
+	@pvLabel(name)
+    @pvFileExtension("comp")
+	prime comp.PowerSupply as referencedPSU
+	
+	@readOnly
+	attr EString as psuName 
+	
+	@readOnly
+	attr EInt as psuPower
+	
+	@readOnly
+	attr EFloat as psuPrice
+	
+}
+
+
+@disable(move, resize,create,delete)
+container PCMainboardContainer{
+	style MainboardContainerStyle("Mainboard Model")
+	containableElements(MainboardNode[0,1])
+}
+
+@disable(move,resize)
+@postCreate("info.scce.cinco.product.fp.pcconfig.pc.hook.MainboardNodePostCreate")
+@postDelete("info.scce.cinco.product.fp.pcconfig.pc.hook.MainboardNodePostDelete")
+container MainboardNode{
+  style MainboardNodeStyle("Mainboard: ${name}")
+  prime mb::Mainboard as referencedMB
+  containableElements(PCCPUNode,PCGPUNode,PCRAMNode,PCRAMSlot)
+  
+  @readOnly	
+  attr EString as name
+}
+
+
+@disable(move,resize,delete,create)
+node PCCPUNode{
+  style CPUStyle("CPU: ${name}")
+  
+  @readOnly
+  attr EString as name
+}
+
+@disable(move,resize,delete,create)
+node PCGPUNode{
+  style GPUStyle("GPU: ${name}")
+  
+  @readOnly
+  attr EString as name
+}
+
+@disable(move,resize,delete,create)
+node PCRAMNode{
+  style RAMStyle("RAM")
+  }
+  
+ @disable(move,resize,delete,create)
+node PCRAMSlot{
+  style RAMSlotStyle("${slotType}")
+  attr EString as slotType
+  }
+ 
+
+
+

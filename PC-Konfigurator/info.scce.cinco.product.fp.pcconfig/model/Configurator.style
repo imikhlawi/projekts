@@ -1,0 +1,307 @@
+
+appearance default  {
+	background (0,206,209)
+	font ("Sans",20)
+	lineStyle DASH
+	lineWidth 2
+	transparency 0.3
+}
+
+appearance textAppearance {
+	font ("Arial",13)	
+}
+
+appearance PCtextAppearance {
+	font ("Arial",16)	
+}
+
+
+nodeStyle simpleRectangle {
+	rectangle {
+		appearance extends default{
+				lineWidth 3
+				lineStyle SOLID
+				background (154,205,50)
+				
+		}
+		size(60,60)
+	}
+}
+
+
+nodeStyle MBStyle(1){
+	
+  roundedRectangle {
+  	 appearance extends default {
+		lineWidth 3			
+		lineStyle SOLID
+		foreground (164,29,29)
+		background (154,205,50)
+		}
+		
+	size(100,100)
+	corner(15,15)	
+	
+	text {
+		appearance textAppearance
+		position(CENTER,BOTTOM -12)
+		value "%1$s"
+		
+	}		
+  }	
+}
+
+nodeStyle CPUSlotStyle(1){
+	
+	rectangle {
+		appearance  extends default{
+	       lineStyle SOLID
+		   lineWidth 3			
+		   
+		}
+				
+	text {
+		appearance textAppearance
+		position(CENTER,MIDDLE)
+		value "%1$s"
+	}			
+  }
+}
+
+nodeStyle CPUStyle(1){
+		
+	rectangle {
+		appearance extends default{
+			transparency 0.0
+			background (135,206,250)
+					
+		}
+		position (0,0)
+		size (100, 100)
+	
+		text {	
+		
+		 appearance textAppearance
+		 position (CENTER, MIDDLE)
+		 value "%1$s"	
+		}
+	}
+}
+
+nodeStyle RAMSlotStyle(1){
+ 	
+	rectangle {
+		appearance  extends default{
+	       lineStyle SOLID
+		   lineWidth 3			
+		   
+		}
+		text Text{
+		    appearance textAppearance
+		    position (CENTER, MIDDLE)
+			value "%1$s"
+		     
+		}
+	}
+}
+
+
+nodeStyle RAMStyle(1){
+ 	
+  rectangle{
+  	
+	appearance extends default{
+	transparency 0.0	
+	background (255,165,0)
+		
+	}
+	
+	text Text{
+		appearance textAppearance
+		position (CENTER , MIDDLE )
+			value "%1$s"
+	  }
+	}
+}
+
+nodeStyle GPUSlotStyle(1){
+	
+	rectangle {
+		
+		appearance  extends default{
+	       lineStyle SOLID
+		   lineWidth 3	
+		   }
+		   
+		position (0,0)	
+		text {
+			appearance textAppearance
+			position (CENTER, MIDDLE)
+			value "%1$s"
+		}
+	}
+}
+
+nodeStyle GPUStyle(1){
+	
+	rectangle {
+		appearance extends default{
+			transparency 0.0
+			background (188,143,143)
+				
+			}
+		position (0,0)
+	
+		text {
+			appearance textAppearance
+			position (CENTER, MIDDLE)
+			value "%1$s"
+		}
+	}
+}
+
+// PC Model. 
+nodeStyle CaseContainerStyle(1){
+	
+	roundedRectangle {
+		appearance extends default{
+			transparency 0.3
+			background 	(255,165,0)
+            lineWidth 3
+		}
+		
+	size(1000,700)	
+	corner(20,20)
+	 text {
+	 		appearance PCtextAppearance
+			position (CENTER, BOTTOM -15)
+			value "%1$s"
+		}
+	}
+	
+}
+
+
+nodeStyle DriveContainerStyle(1){
+	
+    rectangle{
+		appearance extends default{
+			background (240,230,140)
+			lineStyle SOLID
+		    lineWidth 3
+		}
+	
+	 text {
+	 		appearance PCtextAppearance
+			position (CENTER, BOTTOM -15)
+			value "%1$s" 	
+		}
+	}
+}
+
+nodeStyle DriveNodeStyle(1){
+	
+    rectangle{
+		appearance extends default{
+			transparency 0.0
+			background (135,206,250)
+		    lineWidth 3
+			
+		}	
+	 text {
+	 		appearance PCtextAppearance
+			position (CENTER, MIDDLE)
+			value "%1$s" 	
+		}
+	}	
+}
+
+nodeStyle PSUContainerStyle(1){
+	
+	 rectangle{
+		
+		appearance extends default{
+			background (240,230,140)
+		   lineStyle SOLID
+		    lineWidth 3
+		  
+		}
+	
+	 text {
+	 		appearance PCtextAppearance
+			position (CENTER, MIDDLE)
+			value "%1$s" 	
+		}
+	}	
+}
+
+
+nodeStyle PSUNodeStyle(1){
+	
+    rectangle{
+	
+	  	appearance extends default{
+			transparency 0.0
+			background (135,206,250)
+		    lineWidth 3
+		   
+		
+		}
+	  
+	 text {
+	 		appearance PCtextAppearance
+			position (CENTER, MIDDLE)
+			value "%1$s" 	
+		}
+	}	
+}
+
+
+nodeStyle MainboardContainerStyle(1){
+	
+    rectangle{
+	
+	  	appearance extends default{
+		    background (240,230,140)
+			lineStyle SOLID
+		    lineWidth 3	
+		    	
+		}
+	  
+	 text {
+	 		appearance PCtextAppearance 
+			position (CENTER, MIDDLE)
+			value "%1$s" 	
+		}
+	}	
+}
+
+
+nodeStyle MainboardNodeStyle(1){
+	
+    rectangle{
+    	
+	  	appearance extends default{
+	  		background (154,205,50)
+			transparency 0.0
+			lineStyle DASH
+			lineWidth 3				
+		}	  
+		
+	 text {
+	 		appearance PCtextAppearance 
+		    position(CENTER,BOTTOM -12)
+			value "%1$s" 	
+		}
+		
+	}	
+}
+
+
+
+
+
+
+
+
+

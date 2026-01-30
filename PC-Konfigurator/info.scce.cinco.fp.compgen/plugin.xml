@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension point="org.eclipse.ui.popupMenus">
+		<objectContribution
+			id="info.scce.cinco.fp.compgen.FileContributor"
+			adaptable="false"
+			nameFilter="*comp"
+			objectClass="org.eclipse.core.resources.IResource">
+			<menu id="compgen.main"
+				path="additions"
+				label="Components Generator">
+				<!-- icon="platform:/plugin/de.jabc.cinco.meta.plugin.gratext/gt_icon_16.png" -->
+			</menu>
+			<action
+				id="info.scce.cinco.fp.compgen.action.GenerateMainboardsAction"
+				class="info.scce.cinco.fp.compgen.action.GenerateMainboardsAction"
+				label="Generate Mainboards"
+				menubarPath="compgen.main/group1">
+			</action>
+			<action
+				id="info.scce.cinco.fp.compgen.action.GenerateCPUsAction"
+				class="info.scce.cinco.fp.compgen.action.GenerateCPUsAction"
+				label="Generate CPUs"
+				menubarPath="compgen.main/group1">
+			</action>
+			<action
+				id="info.scce.cinco.fp.compgen.action.GenerateRAMsAction"
+				class="info.scce.cinco.fp.compgen.action.GenerateRAMsAction"
+				label="Generate RAMs"
+				menubarPath="compgen.main/group1">
+			</action>
+			<action
+				id="info.scce.cinco.fp.compgen.action.GenerateGPUsAction"
+				class="info.scce.cinco.fp.compgen.action.GenerateGPUsAction"
+				label="Generate GPUs"
+				menubarPath="compgen.main/group1">
+			</action>
+			<action
+				id="info.scce.cinco.fp.compgen.action.GenerateDrivesAction"
+				class="info.scce.cinco.fp.compgen.action.GenerateDrivesAction"
+				label="Generate Drives"
+				menubarPath="compgen.main/group1">
+			</action>
+			<action
+				id="info.scce.cinco.fp.compgen.action.GenerateCasesAction"
+				class="info.scce.cinco.fp.compgen.action.GenerateCasesAction"
+				label="Generate Cases"
+				menubarPath="compgen.main/group1">
+			</action>
+			<action
+				id="info.scce.cinco.fp.compgen.action.GeneratePowerSuppliesAction"
+				class="info.scce.cinco.fp.compgen.action.GeneratePowerSuppliesAction"
+				label="Generate Power Supplies"
+				menubarPath="compgen.main/group1">
+			</action>
+		</objectContribution>
+   </extension>
+</plugin>

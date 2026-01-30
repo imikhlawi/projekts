@@ -1,0 +1,89 @@
+grammar info.scce.cinco.fp.compdsl.ComponentDsl with org.eclipse.xtext.common.Terminals
+
+generate componentDsl "http://cinco.scce.info/fp/ComponentDsl"
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+
+Model: '{'
+	components+=Component+
+	'}';
+
+terminal FLOAT returns ecore::EFloat: (('0'..'9')+ '.' ('0'..'9')+);
+
+Component:
+    Cpu | Ram | Mainboard | Case | Drive | PowerSupply | Gpu;
+
+Cpu:
+    'CPUDescriptor' '['
+        'name' '=' name=STRING
+        'type' '=' type=STRING
+        'powerConsumption' '=' powerConsumption=INT
+        'socket' '=' socket=SocketType
+        'price' '=' price=FLOAT
+    ']';
+
+Ram:
+    'RAMDescriptor' '['
+        'name' '=' name=STRING
+        'type' '=' type=RamType
+        'capacity' '=' capacity=INT 
+        'powerConsumption' '=' powerConsumption=INT 
+        'price' '=' price=FLOAT 
+    ']';
+
+Mainboard:
+    'MainboardDescriptor' '['
+        'name' '=' name=STRING
+        'socket' '=' socket=SocketType
+        'chipset' '=' chipset=STRING
+        'typeMemorySlots' '=' typeMemorySlots=RamType
+        'numMemorySlots' '=' numMemorySlots=INT
+        'numPCIe16Slots' '=' numPCIe16Slots=INT
+        'numSataPorts' '=' numSataPorts=INT
+        'powerConsumption' '=' powerConsumption=INT 
+        'formFactor' '=' formFactor=FormFactor
+        'price' '=' price=FLOAT 
+    ']';
+
+Case:
+    'CaseDescriptor' '['
+        'name' '=' name=STRING
+        'formFactor' '=' formFactor=FormFactor
+        'internalSlots' '=' internalSlots=INT
+        'externalSlots' '=' externalSlots=INT
+        'price' '=' price=FLOAT 
+    ']';
+
+Drive:
+    'DriveDescriptor' '['
+        'name' '=' name=STRING
+        'type' '=' type=DriveType
+        'description' '=' description=STRING
+        'powerConsumption' '=' powerConsumption=INT 
+        'price' '=' price=FLOAT 
+    ']';
+
+PowerSupply:
+    'PowerSupplyDescriptor' '['
+        'name' '=' name=STRING
+        'power' '=' power=INT 
+        'price' '=' price=FLOAT
+    ']';
+
+Gpu:
+    'GPUDescriptor' '['
+        'name' '=' name=STRING
+        'chip' '=' chip=STRING
+        'memory' '=' memory=INT 
+        'powerConsumption' '=' powerConsumption=INT
+        'price' '=' price=FLOAT 
+    ']';
+
+
+enum RamType: DDR3 | DDR4;
+
+enum SocketType: Socket1150 | Socket1151 | Socket1155 | SocketAM1 | SocketAM3 | SocketFM2;
+
+enum FormFactor: ATX | MicroATX | MiniITX;
+
+enum DriveType: HardDrive | OpticalDrive;
+    

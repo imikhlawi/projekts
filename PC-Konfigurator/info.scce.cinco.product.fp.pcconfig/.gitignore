@@ -1,0 +1,5 @@
+bin/
+resources-gen/
+jabc.project
+plugin.xml
+plugin.properties
